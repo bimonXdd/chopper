@@ -1,0 +1,179 @@
+--gf
+
+#version 400
+
+uniform vec3 lightPosition;
+uniform vec3 viewerPosition;
+
+in vec3 interpolatedColor;
+
+// This is the output variable of the fragment shader, we assign the pixel color there
+out vec4 fragColor;
+
+void main(void) {
+    fragColor = vec4(interpolatedColor, 1.0);
+}
+
+
+--
+--gv
+
+#version 400
+
+uniform mat4 projectionMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 modelMatrix;
+uniform vec3 lightPosition;
+
+layout(location=0) in vec3 position; //Need to define specific attribute locations
+layout(location=1) in vec3 color;    //In order to switch the shaders
+layout(location=2) in vec3 normal;   //Between Phong and Gouraud
+
+out vec3 interpolatedColor; //We want to interpolate the color between the vertices
+out vec3 interpolatedNormal;
+
+void main(void) {
+    mat4 modelViewMatrix = viewMatrix * modelMatrix;               //Used to transform points from local space to camera space
+    mat3 normalMatrix = transpose(inverse(mat3(modelViewMatrix))); //Used to transform normal vectors from local space to camera space
+
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
+
+
+    /**
+     * --Task--
+     *
+     * 1. Calculate the vertexPosition in the camera space.
+     * 2. Calculate the correct normal in the camera space.
+     * 3. Find the direction towards the viewer, normalize.
+     * 4. Find the direction towards the light source, normalize.
+     *
+     * Implement Phong's lighting / reflection model:
+     * - Ambient term you can just add
+     * - Use the values calculated before for the diffuse/Lambertian term
+     * - For Phong's specular, find the reflection of the light ray from the point
+     *   See: https://www.opengl.org/sdk/docs/man/html/reflect.xhtml
+     *   Use a value like 200 for the shininess
+     */
+
+     vec3 vertexPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+     vec3 n = normalize(normalMatrix * normal);
+     vec3 viewerPosition = vec3(0.0);
+     vec3 v = normalize(-vertexPosition);
+     vec3 l = normalize(lightPosition - vertexPosition);
+     vec3 r = normalize(reflect(-l, n));
+     float shininess = 200.0f;
+
+     vec3 ambientDiffuse = color * (vec3(0.5) + vec3(0.5) *max(dot(n,l) ,0.0));
+
+     vec3 specularHighlight = vec3(pow(max(0.0, dot(r,v)), shininess));
+
+     interpolatedColor = ambientDiffuse + specularHighlight;
+
+}
+
+
+
+--pf
+
+
+
+#version 400
+
+uniform vec3 lightPosition;
+
+in vec3 interpolatedNormal;
+in vec3 interpolatedPosition;
+in vec3 interpolatedColor;
+
+// This is the output variable of the fragment shader
+// We configure this to be "output 0" for our fragment shader
+// in the main program using glBindFragDataLocation
+out vec4 fragColor;
+
+void main(void) {
+
+    /**
+     * --Task--
+     * Do the same Phong's lighting/reflection model calculation that you did in Gouraud vertex shader before.
+     */
+    float shininess = 200.0f;
+    vec3 viewerPosition = vec3(0.0);
+
+    vec3 color = interpolatedColor; //Assign your calculation here instead 
+    vec3 n = interpolatedNormal; 
+    vec3 vertexPosition = interpolatedPosition;
+
+    vec3 v = normalize(-vertexPosition);
+    vec3 l = normalize(lightPosition - vertexPosition);
+    vec3 r = normalize(reflect(-l, n)); 
+
+
+    vec3 ambientDiffuse = color * (vec3(0.5) + vec3(0.5) * max(dot(n,l) ,0.0));
+
+    vec3 specularHighlight = vec3(pow(max(0.0, dot(r,v)), shininess));
+    fragColor = vec4(specularHighlight+ambientDiffuse, 1.0);
+
+}
+
+
+
+--
+--pv
+
+
+#version 400
+
+uniform mat4 projectionMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 modelMatrix;
+uniform vec3 lightPosition;
+
+layout(location=0) in vec3 position;
+layout(location=1) in vec3 color;
+layout(location=2) in vec3 normal;
+
+out vec3 interpolatedColor; //We send the same color from all the vertices, ideally this would be an uniform
+out vec3 interpolatedNormal;
+out vec3 interpolatedPosition;
+
+void main(void) {
+    mat4 modelViewMatrix = viewMatrix * modelMatrix;
+    mat3 normalMatrix = transpose(inverse(mat3(modelViewMatrix)));
+
+    /**
+     * --Task--
+     * Find the correct values for the position and the normal in camera space.
+     */
+
+    vec3 vertexPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+    vec3 n = normalize(normalMatrix * normal);
+
+    interpolatedColor = color; //Color we just pass along
+    interpolatedNormal = n;
+    interpolatedPosition = vertexPosition;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+
+}
+
+
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
