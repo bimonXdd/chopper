@@ -1,0 +1,61 @@
+{
+    "version": 5,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 27,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "win",
+            "architecture": {
+                "value": "x86",
+                "strategy": "external"
+            },
+            "toolset": {
+                "value": "host=x86",
+                "strategy": "external"
+            },
+            "generator": "Visual Studio 17 2022",
+            "hidden": true
+        },
+        {
+            "name": "unix",
+            "generator": "Unix Makefiles",
+            "hidden": true
+        },
+        {
+            "name": "platform",
+            "inherits": [
+                "win"
+            ],
+            "hidden": true
+        },
+        {
+            "name": "vcpkg",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+            },
+            "hidden": true
+        },
+        {
+            "name": "task-config",
+            "inherits": [
+                "vcpkg",
+                "platform"
+            ],
+            "displayName": "Homework Task",
+            "description": "",
+            "binaryDir": "${sourceDir}/build"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "task",
+            "configurePreset": "task-config",
+            "targets": [
+                "Task"
+            ]
+        }
+    ]
+}
